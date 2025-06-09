@@ -4,23 +4,26 @@ import matplotlib.pyplot as plt
 # Simulation parameters
 num_ions = 100
 implant_E = 1000 * 1.60218e-19  # eV → J
-energy_threshold = 10 * 1.60218e-19  # eV → J
-Z1 = 30  # Br atomic number
+energy_threshold = 50 * 1.60218e-19  # eV → J
+Z1 = 35  # Br atomic number
 Z2 = 6   # C atomic number
 projectile_mass = 2 * Z1 * 1.66054e-27  # Br in kg
 target_mass = 2* Z2 * 1.66054e-27      # C in kg
 step_size = 1e-9  # 1 nm in meters
-theta_std_deg = 1.2
+theta_std_deg = 1
 N = 1e22 * 1e6  # atoms/cm³ → atoms/m³
 verbose = False
 
 def nuclear_stopping_power(E_ion, M1, M2, theta_rad):
     return ((4 * M1 * M2) / ((M1 + M2)**2)) * E_ion * (np.sin(theta_rad / 2)**2)
 
-def electronic_stopping_power(Z1, Z2, v, N, a0=5.29177e-11):
+def electronic_stopping_power_complex(Z1, Z2, v, N, a0=5.29177e-11):
     num = Z1**(7/6) * Z2
     denom = (Z1**(2/36) + Z2**(2/3))**(3/2)
     return (num / denom) * 4 * a0 * N * v
+
+def electronic_stopping_power(energy):
+    return 1e-2 * np.sqrt(energy)
 
 def velocity_from_energy(E, m):
     return np.sqrt(2 * E / m)
@@ -32,16 +35,17 @@ def simulate_ion():
     direction = np.array([0.0, 1.0])  # Moving into the material (positive z)
     recoils = []
 
-    while energy > energy_threshold:
+    while energy > energy_threshold and pos[1] >= 0:
         pos += direction * step_size
         traj.append(pos.copy())
 
         v = velocity_from_energy(energy, projectile_mass)
-        dE_e = electronic_stopping_power(Z1, Z2, v, N) * step_size
-        dE_e = 1e-3 * energy
+        dE_e = electronic_stopping_power_complex(Z1, Z2, v, N) * step_size
+        dE_e = electronic_stopping_power(energy) * step_size
+
         
         # stochastic nuclear scattering
-        if np.random.rand() < 0.75:  # 75% chance per step
+        if np.random.rand() < 0.75 :  # 75% chance per step
             angle = np.radians(np.random.normal(0, theta_std_deg))
             dE_n = nuclear_stopping_power(energy, projectile_mass, target_mass, angle)
 
