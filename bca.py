@@ -14,6 +14,10 @@ theta_std_deg = 1
 N = 1e22 * 1e6  # atoms/cm³ → atoms/m³
 verbose = False
 
+def rotation_matrix(angle):
+    return np.array([[np.cos(angle), -np.sin(angle)],
+                  [np.sin(angle),  np.cos(angle)]])
+
 def nuclear_stopping_power(E_ion, M1, M2, theta_rad):
     return ((4 * M1 * M2) / ((M1 + M2)**2)) * E_ion * (np.sin(theta_rad / 2)**2)
 
@@ -50,8 +54,7 @@ def simulate_ion():
             dE_n = nuclear_stopping_power(energy, projectile_mass, target_mass, angle)
 
             # scatter direction
-            R = np.array([[np.cos(angle), -np.sin(angle)],
-                          [np.sin(angle),  np.cos(angle)]])
+            R = rotation_matrix(angle)
             direction = R @ direction
             direction /= np.linalg.norm(direction)
 
